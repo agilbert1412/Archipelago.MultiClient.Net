@@ -1,4 +1,4 @@
-﻿#if NET45 || NETSTANDARD2_0 || NET6_0
+﻿#if NET45 || NETSTANDARD2_0 || NET6_0 || NET462
 using Archipelago.MultiClient.Net.Converters;
 using Archipelago.MultiClient.Net.Exceptions;
 using Newtonsoft.Json;
@@ -69,23 +69,32 @@ namespace Archipelago.MultiClient.Net.Helpers
 
 			_ = Task.Run(PollingLoop);
 	        _ = Task.Run(SendLoop);
-        }
+		}
+
+		private void Log(string message)
+		{
+			var time = DateTime.Now;
+			File.AppendAllText("multiclientlog.txt", Environment.NewLine + time.ToLongTimeString() + "." + time.Millisecond + ": " + message);
+		}
 
 		async Task PollingLoop()
         {
+	        Log("BaseArchipelagoSocketHelper.PollingLoop Started");
             var buffer = new byte[bufferSize];
 
             while (Socket.State == WebSocketState.Open)
-            {
-                string message = null;
+			{
+				Log("BaseArchipelagoSocketHelper.PollingLoop Iteration");
+				string message = null;
 
                 try
                 {
                     message = await ReadMessageAsync(buffer);
                 }
                 catch (Exception e)
-                {
-                    OnError(e);
+				{
+					Log("BaseArchipelagoSocketHelper.PollingLoop Error: " + e.Message);
+					OnError(e);
                 }
 
                 OnMessageReceived(message);
@@ -313,31 +322,43 @@ namespace Archipelago.MultiClient.Net.Helpers
 
         void OnMessageReceived(string message)
         {
+	        Log("BaseArchipelagoSocketHelper.OnMessageReceived: " + message);
             try
             {
                 if (!string.IsNullOrEmpty(message) && PacketReceived != null)
                 {
 	                List<ArchipelagoPacketBase> packets = null;
+	                Log("BaseArchipelagoSocketHelper.OnMessageReceived: Will try to parse the packets");
 
 					try
-	                {
-		                packets = JsonConvert.DeserializeObject<List<ArchipelagoPacketBase>>(message, Converter);
+					{
+						Log("BaseArchipelagoSocketHelper.OnMessageReceived: Converter: " + Converter);
+						packets = JsonConvert.DeserializeObject<List<ArchipelagoPacketBase>>(message, Converter);
+						Log("BaseArchipelagoSocketHelper.OnMessageReceived: Deserialized the packets: " + packets);
 					}
 	                catch (Exception exception)
-	                {
+					{
+						Log("BaseArchipelagoSocketHelper.OnMessageReceived: OnError(exception): " + exception.Message);
 						OnError(exception);
 	                }
 
-                    if (packets == null)
-                        return;
+	                if (packets == null)
+					{
+						Log("BaseArchipelagoSocketHelper.OnMessageReceived: Packets are null");
+						return;
+	                }
 
                     foreach (var packet in packets)
-                        PacketReceived(packet);
+					{
+						Log("BaseArchipelagoSocketHelper.OnMessageReceived: Packet: " + packet);
+						PacketReceived(packet);
+                    }
                 }
             }
             catch (Exception e)
-            {
-                OnError(e);
+			{
+				Log("BaseArchipelagoSocketHelper.OnMessageReceived: OnError(e): " + e.Message);
+				OnError(e);
             }
         }
 

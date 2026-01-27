@@ -1,23 +1,38 @@
 ﻿using Archipelago.MultiClient.Net.Enums;
 using Newtonsoft.Json;
 using System;
+using System.IO;
 
 namespace Archipelago.MultiClient.Net.Converters
 {
     public class PermissionsEnumConverter : JsonConverter
-    {
-        public override bool CanConvert(Type objectType) => 
-	        objectType == typeof(string) 
-	        || objectType == typeof(Permissions) 
-	        || objectType == typeof(int);
+	{ 
+		private void Log(string message)
+		{
+			var time = DateTime.Now;
+			File.AppendAllText("multiclientlog.txt", Environment.NewLine + time.ToLongTimeString() + "." + time.Millisecond + ": " + message);
+		}
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            var value = reader.Value.ToString();
-            var isInt = int.TryParse(value, out var intValue);
+		public override bool CanConvert(Type objectType)
+		{
+			Log("PermissionsEnumConverter.CanConvert: " + objectType);
+			return objectType == typeof(string)
+			       || objectType == typeof(Permissions)
+			       || objectType == typeof(int);
+		}
 
-            if (isInt)
-                return (Permissions)intValue;
+		public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+		{
+			Log("PermissionsEnumConverter.ReadJson");
+			var value = reader.Value.ToString();
+			Log("PermissionsEnumConverter.ReadJson() value: " + value);
+			var isInt = int.TryParse(value, out var intValue);
+
+			if (isInt)
+			{
+				Log("PermissionsEnumConverter.ReadJson() value is an int");
+				return (Permissions)intValue;
+			}
 
             var returnValue = Permissions.Disabled;
 
@@ -30,14 +45,17 @@ namespace Archipelago.MultiClient.Net.Converters
             if (value.Contains("goal"))
                 returnValue |= Permissions.Goal;
 
-            return returnValue;
+            Log("PermissionsEnumConverter.ReadJson() value is " + returnValue);
+			return returnValue;
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
-            var permissionsValue = (Permissions)value;
+		{
+			Log("PermissionsEnumConverter.WriteJson: " + value);
+			var permissionsValue = (Permissions)value;
 
             writer.WriteValue((int)permissionsValue);
-        }
+            Log("PermissionsEnumConverter.WriteJson: Wrote the value");
+		}
     }
 }

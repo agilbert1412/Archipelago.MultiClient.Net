@@ -5,6 +5,7 @@ using Archipelago.MultiClient.Net.Models;
 using Archipelago.MultiClient.Net.Packets;
 using System;
 using System.Threading;
+using System.IO;
 
 #if !NET35
 using System.Threading.Tasks;
@@ -123,7 +124,7 @@ namespace Archipelago.MultiClient.Net
 	/// </summary>
 	public partial class ArchipelagoSession : IArchipelagoSession
     {
-        const int ArchipelagoConnectionTimeoutInSeconds = 4;
+        const int ArchipelagoConnectionTimeoutInSeconds = 30;
 
 		/// <inheritdoc/>
 		public IArchipelagoSocketHelper Socket { get; }
@@ -187,10 +188,12 @@ namespace Archipelago.MultiClient.Net
 		
         void Socket_PacketReceived(ArchipelagoPacketBase packet)
         {
+			Log("Socket_PacketReceived: New Packet! - " + packet.GetType());
             switch (packet)
             {
                 case ConnectedPacket _:
 	            case ConnectionRefusedPacket _:
+		            Log("Socket_PacketReceived: Connected or ConnectionRefused");
 #if NET35
 					if (expectingLoginResult)
                     {
@@ -199,43 +202,63 @@ namespace Archipelago.MultiClient.Net
                     }
                     break;
 #else
-                    loginResultTask.TrySetResult(LoginResult.FromPacket(packet));
+					loginResultTask.TrySetResult(LoginResult.FromPacket(packet));
                     break;
 #endif
                 // ReSharper disable once UnusedVariable
                 case RoomInfoPacket roomInfoPacket:
+	                Log("Socket_PacketReceived: Received RoomInfoPacket");
 #if NET35
 					awaitingRoomInfo = false;
 #else
+	                Log("Socket_PacketReceived: Going to Try to set the task result");
 					roomInfoPacketTask.TrySetResult(roomInfoPacket);
+	                Log("Socket_PacketReceived: Successfully set the task result");
 #endif
 					break;
             }
+		}
+
+        private void Log(string message)
+        {
+	        var time = DateTime.Now;
+	        File.AppendAllText("multiclientlog.txt", Environment.NewLine + time.ToLongTimeString() + "." + time.Millisecond + ": " + message);
         }
 
- #if !NET35
-	    /// <inheritdoc/>
+#if !NET35
+		/// <inheritdoc/>
 		public Task<RoomInfoPacket> ConnectAsync()
-        {
+		{
+			Log("ArchipelagoSession.ConnectAsync(): Start of ConnectAsync");
             roomInfoPacketTask = new TaskCompletionSource<RoomInfoPacket>();
 
-            Task.Factory.StartNew(() =>
+            Log("ArchipelagoSession.ConnectAsync(): About to start task");
+			Task.Factory.StartNew(() =>
             {
                 try
-                {
-                    var task = Socket.ConnectAsync();
-                    task.Wait(TimeSpan.FromSeconds(ArchipelagoConnectionTimeoutInSeconds));
+				{
+					Log("ArchipelagoSession.ConnectAsync().TaskFactoryTask: Before Socket.ConnectAsync()");
+					var task = Socket.ConnectAsync();
+					Log("ArchipelagoSession.ConnectAsync().TaskFactoryTask: After Socket.ConnectAsync()");
+					task.Wait(TimeSpan.FromSeconds(ArchipelagoConnectionTimeoutInSeconds));
+					Log("ArchipelagoSession.ConnectAsync().TaskFactoryTask: After Waiting for Socket.ConnectAsync()");
 
 					if (!task.IsCompleted)
-                        roomInfoPacketTask.TrySetCanceled();
+					{
+						Log("ArchipelagoSession.ConnectAsync().TaskFactoryTask: !task.IsCompleted");
+						roomInfoPacketTask.TrySetCanceled();
+					}
                 }
                 catch (AggregateException)
-                {
-                    roomInfoPacketTask.TrySetCanceled();
-                }
-            });
+				{
+					Log("ArchipelagoSession.ConnectAsync().TaskFactoryTask: Caught an AggregateException");
+					roomInfoPacketTask.TrySetCanceled();
+				}
+				Log("ArchipelagoSession.ConnectAsync().TaskFactoryTask: Task Factory Task is done!");
+			});
 
-            return roomInfoPacketTask.Task;
+			Log("ArchipelagoSession.ConnectAsync(): About to return roomInfoPacketTask.Task");
+			return roomInfoPacketTask.Task;
         }
 
 	    /// <inheritdoc/>
@@ -333,24 +356,38 @@ namespace Archipelago.MultiClient.Net
                 return new LoginFailure("Socket closed unexpectedly.");
             }
 #else
-            var task = ConnectAsync();
+	        Log("TryConnectAndLogin: Before Connect");
+			var task = ConnectAsync();
 
-            try
-            {
-	            task.Wait(TimeSpan.FromSeconds(ArchipelagoConnectionTimeoutInSeconds));
-            }
+			Log("TryConnectAndLogin: After Connect");
+			try
+			{
+				Log("TryConnectAndLogin: Before Wait");
+				task.Wait(TimeSpan.FromSeconds(ArchipelagoConnectionTimeoutInSeconds));
+				Log("TryConnectAndLogin: After Wait");
+			}
             catch (AggregateException e)
-            {
-	            if (e.GetBaseException() is OperationCanceledException)
-		            return new LoginFailure("Connection timed out.");
+			{
+				Log($"Catch e: {e}");
+				if (e.GetBaseException() is OperationCanceledException)
+				{
+					Log("TryConnectAndLogin: It's an OperationCanceledException");
+					return new LoginFailure("Connection timed out.");
+				}
 
-	            return new LoginFailure(e.GetBaseException().Message);
+				Log("TryConnectAndLogin: It's not an OperationCanceledException");
+				return new LoginFailure(e.GetBaseException().Message);
             }
 
-			if (!task.IsCompleted)
+            if (!task.IsCompleted)
+			{
+				Log("TryConnectAndLogin: Task was not completed");
 				return new LoginFailure("Connection timed out.");
-			
-			return LoginAsync(game, name, itemsHandlingFlags, version, tags, uuid, password, requestSlotData).Result;
+			}
+
+			Log("TryConnectAndLogin: Before Login");
+			var loginResult = LoginAsync(game, name, itemsHandlingFlags, version, tags, uuid, password, requestSlotData).Result;
+			return loginResult;
 #endif
         }
 
