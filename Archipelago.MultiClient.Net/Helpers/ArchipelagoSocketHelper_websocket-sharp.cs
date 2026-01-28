@@ -5,6 +5,7 @@ using Archipelago.MultiClient.Net.Extensions;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Security.Authentication;
 
 #if !NET35
@@ -12,6 +13,7 @@ using System.Threading.Tasks;
 #endif
 
 using WebSocketSharp;
+using ErrorEventArgs = WebSocketSharp.ErrorEventArgs;
 
 namespace Archipelago.MultiClient.Net.Helpers
 {
@@ -231,7 +233,7 @@ namespace Archipelago.MultiClient.Net.Helpers
         {
             if (webSocket != null && webSocket.IsAlive)
             {
-                var packetAsJson = JsonConvert.SerializeObject(packets);
+                var packetAsJson = JsonConvert.SerializeObject(packets, JsonSettings.GetSerializerSettings());
                 webSocket.Send(packetAsJson);
 
                 if (PacketsSent != null)
@@ -299,7 +301,7 @@ namespace Archipelago.MultiClient.Net.Helpers
         {
             if (webSocket.IsAlive)
             {
-                var packetAsJson = JsonConvert.SerializeObject(packets);
+                var packetAsJson = JsonConvert.SerializeObject(packets, JsonSettings.GetSerializerSettings());
                 webSocket.SendAsync(packetAsJson, onComplete);
 
                 if (PacketsSent != null)
@@ -354,7 +356,7 @@ namespace Archipelago.MultiClient.Net.Helpers
 
             if (webSocket != null && webSocket.IsAlive)
             {
-                var packetAsJson = JsonConvert.SerializeObject(packets);
+                var packetAsJson = JsonConvert.SerializeObject(packets, JsonSettings.GetSerializerSettings());
                 webSocket.SendAsync(packetAsJson, success => {
                     if (!success)
                         taskCompletionSource.TrySetException(new Exception("Failed to send packets async"));
@@ -405,12 +407,18 @@ namespace Archipelago.MultiClient.Net.Helpers
 	        List<ArchipelagoPacketBase> packets = null;
 
 	        try
-	        {
-		        packets = JsonConvert.DeserializeObject<List<ArchipelagoPacketBase>>(e.Data, Converter);
-	        }
+			{
+				var logMessage = $"{Environment.NewLine} Trying to parse a new message: {e.Data}";
+				File.AppendAllText("multiclientlog.txt", logMessage);
+				packets = JsonConvert.DeserializeObject<List<ArchipelagoPacketBase>>(e.Data, Converter);
+				logMessage = $"{Environment.NewLine} Success!";
+				File.AppendAllText("multiclientlog.txt", logMessage);
+}
 	        catch (Exception exception)
-	        {
-		        OnError(exception);
+			{
+				var logMessage = $"{Environment.NewLine} Error! {exception.Message}";
+				File.AppendAllText("multiclientlog.txt", logMessage);
+				OnError(exception);
 	        }
 			
 			if (packets != null)

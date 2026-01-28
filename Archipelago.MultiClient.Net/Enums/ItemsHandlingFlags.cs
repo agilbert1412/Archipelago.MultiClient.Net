@@ -1,11 +1,13 @@
-﻿using System;
+﻿using Archipelago.MultiClient.Net.Converters;
+using Newtonsoft.Json;
+using System;
 
 namespace Archipelago.MultiClient.Net.Enums
 {
-    /// <summary>
-    /// Indicates to the server how the client would like to get ReceivedItems packets.
-    /// </summary>
-    [Flags]
+	/// <summary>
+	/// Indicates to the server how the client would like to get ReceivedItems packets.
+	/// </summary>
+	[Flags]
     public enum ItemsHandlingFlags
     {
         /// <summary>

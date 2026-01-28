@@ -1,6 +1,8 @@
-﻿using Archipelago.MultiClient.Net.Enums;
+﻿using Archipelago.MultiClient.Net.Converters;
+using Archipelago.MultiClient.Net.Enums;
 using Archipelago.MultiClient.Net.Models;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 
 namespace Archipelago.MultiClient.Net.Packets
@@ -23,6 +25,7 @@ namespace Archipelago.MultiClient.Net.Packets
         [JsonProperty("checked_locations")]
         public long[] LocationsChecked { get; set; }
         [JsonProperty("slot_data")]
+		[JsonConverter(typeof(SlotDataConverter))]
         public Dictionary<string, object> SlotData { get; set; }
         [JsonProperty("slot_info")]
         public Dictionary<int, NetworkSlot> SlotInfo { get; set; }

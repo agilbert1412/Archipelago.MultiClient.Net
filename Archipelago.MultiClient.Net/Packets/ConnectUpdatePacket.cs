@@ -1,4 +1,5 @@
-﻿using Archipelago.MultiClient.Net.Enums;
+﻿using Archipelago.MultiClient.Net.Converters;
+using Archipelago.MultiClient.Net.Enums;
 using Newtonsoft.Json;
 
 namespace Archipelago.MultiClient.Net.Packets
@@ -10,7 +11,8 @@ namespace Archipelago.MultiClient.Net.Packets
         [JsonProperty("tags")]
         public string[] Tags { get; set; }
 
-        [JsonProperty("items_handling")]
+        [JsonConverter(typeof(IntEnumConverter))]
+		[JsonProperty("items_handling")]
         public ItemsHandlingFlags? ItemsHandling { get; set; }
     }
 }

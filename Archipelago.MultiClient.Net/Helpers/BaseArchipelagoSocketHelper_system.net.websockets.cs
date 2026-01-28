@@ -262,7 +262,7 @@ namespace Archipelago.MultiClient.Net.Helpers
             
             var packets = packetList.ToArray();
             
-            var packetAsJson = JsonConvert.SerializeObject(packets);
+            var packetAsJson = JsonConvert.SerializeObject(packets, JsonSettings.GetSerializerSettings());
             var messageBuffer = Encoding.UTF8.GetBytes(packetAsJson);
             var messagesCount = (int)Math.Ceiling((double)messageBuffer.Length / bufferSize);
 
@@ -321,10 +321,16 @@ namespace Archipelago.MultiClient.Net.Helpers
 
 					try
 	                {
+						var logMessage = $"{Environment.NewLine} Trying to parse a new message: {message}";
+						File.AppendAllText("multiclientlog.txt", logMessage);
 		                packets = JsonConvert.DeserializeObject<List<ArchipelagoPacketBase>>(message, Converter);
+						logMessage = $"{Environment.NewLine} Success!";
+						File.AppendAllText("multiclientlog.txt", logMessage);
 					}
 	                catch (Exception exception)
 	                {
+						var logMessage = $"{Environment.NewLine} Error! {exception.Message}";
+						File.AppendAllText("multiclientlog.txt", logMessage);
 						OnError(exception);
 	                }
 
