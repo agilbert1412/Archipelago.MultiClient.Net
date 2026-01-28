@@ -408,16 +408,10 @@ namespace Archipelago.MultiClient.Net.Helpers
 
 	        try
 			{
-				var logMessage = $"{Environment.NewLine} Trying to parse a new message: {e.Data}";
-				File.AppendAllText("multiclientlog.txt", logMessage);
 				packets = JsonConvert.DeserializeObject<List<ArchipelagoPacketBase>>(e.Data, Converter);
-				logMessage = $"{Environment.NewLine} Success!";
-				File.AppendAllText("multiclientlog.txt", logMessage);
-}
+            }
 	        catch (Exception exception)
 			{
-				var logMessage = $"{Environment.NewLine} Error! {exception.Message}";
-				File.AppendAllText("multiclientlog.txt", logMessage);
 				OnError(exception);
 	        }
 			
