@@ -1,5 +1,4 @@
-﻿using Archipelago.MultiClient.Net.Converters;
-using Archipelago.MultiClient.Net.Models;
+﻿using Archipelago.MultiClient.Net.Models;
 using Newtonsoft.Json;
 using System;
 using System.IO;
@@ -50,7 +49,7 @@ namespace Archipelago.MultiClient.Net.DataPackage
 			{
 				Directory.CreateDirectory(folderPath);
 
-				var contents = JsonConvert.SerializeObject(gameData, JsonSettings.GetSerializerSettings());
+				var contents = JsonConvert.SerializeObject(gameData);
 				File.WriteAllText(filePath, contents);
 			}
 			catch

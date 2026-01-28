@@ -12,7 +12,7 @@ namespace Archipelago.MultiClient.Net.Packets
         public string[] Tags { get; set; }
 
         [JsonConverter(typeof(IntEnumConverter))]
-		[JsonProperty("items_handling")]
+        [JsonProperty("items_handling")]
         public ItemsHandlingFlags? ItemsHandling { get; set; }
     }
 }

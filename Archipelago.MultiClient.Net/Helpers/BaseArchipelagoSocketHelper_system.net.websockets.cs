@@ -14,40 +14,40 @@ using System.Threading.Tasks;
 
 namespace Archipelago.MultiClient.Net.Helpers
 {
-	/// <summary>
-	/// Websocket agnostic version of the Socket helper, allows a different socket class to be used for testing
-	/// </summary>
-	/// <typeparam name="T">The type of WebSocket to use</typeparam>
+    /// <summary>
+    /// Websocket agnostic version of the Socket helper, allows a different socket class to be used for testing
+    /// </summary>
+    /// <typeparam name="T">The type of WebSocket to use</typeparam>
     public class BaseArchipelagoSocketHelper<T> where T : WebSocket
-	{
-		// ReSharper disable once StaticMemberInGenericType
-		static readonly ArchipelagoPacketConverter Converter = new ArchipelagoPacketConverter();
+    {
+        // ReSharper disable once StaticMemberInGenericType
+        static readonly ArchipelagoPacketConverter Converter = new ArchipelagoPacketConverter();
 
-		/// <summary>
-		/// Handler for recieved and sucsesfully parsed packages
-		/// </summary>
-		public event ArchipelagoSocketHelperDelagates.PacketReceivedHandler PacketReceived;
-		/// <summary>
-		/// Handler for packets published to the websocket, called before the packet is handled by the server
-		/// </summary>
-		public event ArchipelagoSocketHelperDelagates.PacketsSentHandler PacketsSent;
-		/// <summary>
-		/// Handler for error on the socket or during parsing of the packets
-		/// </summary>
-		public event ArchipelagoSocketHelperDelagates.ErrorReceivedHandler ErrorReceived;
-		/// <summary>
-		/// Handler for when the underlaying socket connection is closed
-		/// </summary>
-		public event ArchipelagoSocketHelperDelagates.SocketClosedHandler SocketClosed;
-		/// <summary>
-		/// Handler for when the underlaying socket connection is opened to the archipelago server
-		/// </summary>
-		public event ArchipelagoSocketHelperDelagates.SocketOpenedHandler SocketOpened;
+        /// <summary>
+        /// Handler for recieved and sucsesfully parsed packages
+        /// </summary>
+        public event ArchipelagoSocketHelperDelagates.PacketReceivedHandler PacketReceived;
+        /// <summary>
+        /// Handler for packets published to the websocket, called before the packet is handled by the server
+        /// </summary>
+        public event ArchipelagoSocketHelperDelagates.PacketsSentHandler PacketsSent;
+        /// <summary>
+        /// Handler for error on the socket or during parsing of the packets
+        /// </summary>
+        public event ArchipelagoSocketHelperDelagates.ErrorReceivedHandler ErrorReceived;
+        /// <summary>
+        /// Handler for when the underlaying socket connection is closed
+        /// </summary>
+        public event ArchipelagoSocketHelperDelagates.SocketClosedHandler SocketClosed;
+        /// <summary>
+        /// Handler for when the underlaying socket connection is opened to the archipelago server
+        /// </summary>
+        public event ArchipelagoSocketHelperDelagates.SocketOpenedHandler SocketOpened;
 
-		readonly BlockingCollection<Tuple<ArchipelagoPacketBase, TaskCompletionSource<bool>>> sendQueue =
-	        new BlockingCollection<Tuple<ArchipelagoPacketBase, TaskCompletionSource<bool>>>();
+        readonly BlockingCollection<Tuple<ArchipelagoPacketBase, TaskCompletionSource<bool>>> sendQueue =
+            new BlockingCollection<Tuple<ArchipelagoPacketBase, TaskCompletionSource<bool>>>();
 
-		/// <summary>
+        /// <summary>
         ///     Returns true if the socket believes it is connected to the host.
         ///     Does not emit a ping to determine if the connection is stable.
         /// </summary>
@@ -58,20 +58,20 @@ namespace Archipelago.MultiClient.Net.Helpers
 
         internal BaseArchipelagoSocketHelper(T socket, int bufferSize = 1024)
         {
-	        Socket = socket;
-	        this.bufferSize = bufferSize;
+            Socket = socket;
+            this.bufferSize = bufferSize;
         }
 
-		internal void StartPolling()
+        internal void StartPolling()
         {
-	        if (SocketOpened != null)
-		        SocketOpened();
+            if (SocketOpened != null)
+                SocketOpened();
 
-			_ = Task.Run(PollingLoop);
-	        _ = Task.Run(SendLoop);
+            _ = Task.Run(PollingLoop);
+            _ = Task.Run(SendLoop);
         }
 
-		async Task PollingLoop()
+        async Task PollingLoop()
         {
             var buffer = new byte[bufferSize];
 
@@ -107,39 +107,39 @@ namespace Archipelago.MultiClient.Net.Helpers
                 }
 
                 await Task.Delay(20);
-			}
+            }
         }
 
         async Task<string> ReadMessageAsync(byte[] buffer)
         {
             using (var readStream = new MemoryStream(buffer.Length))
             {
-	            WebSocketReceiveResult result;
-	            do
-	            {
-		            result = await Socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                WebSocketReceiveResult result;
+                do
+                {
+                    result = await Socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
 
-		            if (result.MessageType == WebSocketMessageType.Close)
-		            {
-			            try
-			            {
-				            await Socket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
-			            }
-			            catch
-			            {
-				            // ignore failure to close when a close is requested as the connection might already be dropped
-			            }
+                    if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        try
+                        {
+                            await Socket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+                        }
+                        catch
+                        {
+                            // ignore failure to close when a close is requested as the connection might already be dropped
+                        }
 
-			            OnSocketClosed();
-		            }
-		            else
-		            {
-						readStream.Write(buffer, 0, result.Count);
-		            }
-	            } while (!result.EndOfMessage);
+                        OnSocketClosed();
+                    }
+                    else
+                    {
+                        readStream.Write(buffer, 0, result.Count);
+                    }
+                } while (!result.EndOfMessage);
 
-				return Encoding.UTF8.GetString(readStream.ToArray());
-			}
+                return Encoding.UTF8.GetString(readStream.ToArray());
+            }
         }
 
         /// <summary>
@@ -276,7 +276,7 @@ namespace Archipelago.MultiClient.Net.Helpers
                     count = messageBuffer.Length - offset;
 
                 await Socket.SendAsync(new ArraySegment<byte>(messageBuffer, offset, count), 
-	                WebSocketMessageType.Text, lastMessage, CancellationToken.None);
+                    WebSocketMessageType.Text, lastMessage, CancellationToken.None);
             }
 
             foreach (var task in tasks)
@@ -317,16 +317,16 @@ namespace Archipelago.MultiClient.Net.Helpers
             {
                 if (!string.IsNullOrEmpty(message) && PacketReceived != null)
                 {
-	                List<ArchipelagoPacketBase> packets = null;
+                    List<ArchipelagoPacketBase> packets = null;
 
-					try
-	                {
-		                packets = JsonConvert.DeserializeObject<List<ArchipelagoPacketBase>>(message, Converter);
-					}
-	                catch (Exception exception)
-	                {
-						OnError(exception);
-	                }
+                    try
+                    {
+                        packets = JsonConvert.DeserializeObject<List<ArchipelagoPacketBase>>(message, Converter);
+                    }
+                    catch (Exception exception)
+                    {
+                        OnError(exception);
+                    }
 
                     if (packets == null)
                         return;
@@ -341,10 +341,10 @@ namespace Archipelago.MultiClient.Net.Helpers
             }
         }
 
-		/// <summary>
-		/// Error handler to call when an exception occurs, it will trigger the socket's ErrorRecieved handler
-		/// </summary>
-		/// <param name="e">the exception that occured</param>
+        /// <summary>
+        /// Error handler to call when an exception occurs, it will trigger the socket's ErrorRecieved handler
+        /// </summary>
+        /// <param name="e">the exception that occured</param>
         protected void OnError(Exception e)
         {
             try

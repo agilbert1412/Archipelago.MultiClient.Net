@@ -28,10 +28,10 @@ namespace Archipelago.MultiClient.Net.Packets
         public string[] Tags { get; set; }
 
         [JsonConverter(typeof(IntEnumConverter))]
-		[JsonProperty("items_handling")]
-		public ItemsHandlingFlags ItemsHandling { get; set; }
+        [JsonProperty("items_handling")]
+        public ItemsHandlingFlags ItemsHandling { get; set; }
 
         [JsonProperty("slot_data")]
-		public bool RequestSlotData { get; set; }
+        public bool RequestSlotData { get; set; }
     }
 }
